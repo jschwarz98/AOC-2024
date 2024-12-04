@@ -42,7 +42,6 @@ defmodule Day3 do
                       {seen, value, enabled}
 
                     false ->
-
                       {"", value, enabled}
                   end
               end
@@ -67,7 +66,6 @@ defmodule Day3 do
                       {seen, value, enabled}
 
                     false ->
-
                       {"", value, enabled}
                   end
               end
@@ -114,16 +112,18 @@ end
 # day3.data
 {result, _} =
   File.stream!("./day3.data", :line)
-  |> Enum.reduce({0, true}, fn (line, {value, enabled})->
-    IO.inspect("calling with reading enabled? " <> (case enabled do
-      true -> "yes"
-      false -> "no"
-    end))
+  |> Enum.reduce({0, true}, fn line, {value, enabled} ->
+    IO.inspect(
+      "calling with reading enabled? " <>
+        case enabled do
+          true -> "yes"
+          false -> "no"
+        end
+    )
 
     {value_of_line, ended_enabled} = Day3.doDontParser(line, enabled)
     IO.inspect({value_of_line, ended_enabled})
     {value_of_line + value, ended_enabled}
   end)
-
 
 IO.inspect(result)
