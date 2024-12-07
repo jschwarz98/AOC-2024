@@ -8,11 +8,9 @@ defmodule Day6 do
         lines
 
       true ->
-        {new_lines, previous_char} =
-          lines
-          |> move_guard(previous)
-
-        predict_next_position(new_lines, previous_char)
+        with {new_lines, previous_char} <- move_guard(lines, previous) do
+          predict_next_position(new_lines, previous_char)
+        end
     end
   end
 
@@ -24,6 +22,9 @@ defmodule Day6 do
 
     {status, new_lines, new_previous} =
       case result do
+        :cycle_detected ->
+          {:cycle_detected, 0, 0}
+
         {:found, _, _} ->
           result
 
@@ -36,6 +37,9 @@ defmodule Day6 do
             |> Enum.reduce({:not_found, [], previous}, &Day6.check_and_maybe_modify_chunk/2)
 
           case result do
+            :cycle_detected ->
+              {:cycle_detected, 0, 0}
+
             {:found, found_in_lines, new_previous} ->
               {:found, [head2] ++ found_in_lines, new_previous}
 
@@ -48,6 +52,9 @@ defmodule Day6 do
                 |> Enum.reduce({:not_found, [], previous}, &Day6.check_and_maybe_modify_chunk/2)
 
               case result do
+                :cycle_detected ->
+                  {:cycle_detected, 0, 0}
+
                 {:found, found_in_lines, new_previous} ->
                   {:found, [head2, head3] ++ found_in_lines, new_previous}
 
@@ -58,6 +65,9 @@ defmodule Day6 do
       end
 
     case status do
+      :cycle_detected ->
+        :cycle_detected
+
       :found ->
         {new_lines, new_previous}
 
@@ -69,17 +79,19 @@ defmodule Day6 do
 
         case guard_in_line1? do
           true ->
-            {[_, line1, line2], new_previous} = modify_chunk([padding, line1, line2], previous)
-            {[line1, line2 | rest_of_lines], new_previous}
+            with {[_, line1, line2], new_previous} <-
+                   modify_chunk([padding, line1, line2], previous) do
+              {[line1, line2 | rest_of_lines], new_previous}
+            end
 
           false ->
             ## then it must be in the last two lines
             [last, second_last | rest_of_lines_reversed] = Enum.reverse(lines)
 
-            {[second_last, last, _], new_previous} =
-              modify_chunk([second_last, last, padding], previous)
-
-            {Enum.reverse([last, second_last | rest_of_lines_reversed]), new_previous}
+            with {[second_last, last, _], new_previous} <-
+                   modify_chunk([second_last, last, padding], previous) do
+              {Enum.reverse([last, second_last | rest_of_lines_reversed]), new_previous}
+            end
         end
     end
   end
@@ -109,9 +121,9 @@ defmodule Day6 do
       true ->
         # todo modify lines, then append to previous lines
 
-        {modified_lines, previous_char} = modify_chunk(chunk, previous_char)
-
-        {:found, previous_lines ++ modified_lines, previous_char}
+        with {modified_lines, previous_char} <- modify_chunk(chunk, previous_char) do
+          {:found, previous_lines ++ modified_lines, previous_char}
+        end
     end
   end
 
@@ -151,7 +163,8 @@ defmodule Day6 do
             {chars_to_the_left, [_guard | chars_to_the_right]} =
               Enum.split(line2_chars, guard_index)
 
-            filler = ?+ #always "+" because its a corner
+            # always "+" because its a corner
+            filler = ?+
 
             line2_chars = chars_to_the_left ++ [filler] ++ chars_to_the_right
 
@@ -161,7 +174,13 @@ defmodule Day6 do
             line1_chars = chars_to_the_left ++ [?^] ++ chars_to_the_right
 
             # new chunk
-            {[List.to_string(line1_chars), List.to_string(line2_chars), line3], previous_char}
+            case previous_char do
+              x when x in [?|, ?+] ->
+                :cycle_detected
+
+              _ ->
+                {[List.to_string(line1_chars), List.to_string(line2_chars), line3], previous_char}
+            end
 
           # move of the map, place x
           nil ->
@@ -195,8 +214,15 @@ defmodule Day6 do
 
             line2_chars = chars_to_the_left ++ [?<, filler] ++ chars_to_the_right
 
+            case previous_char do
+              x when x in [?-, ?+] ->
+                :cycle_detected
+
+              _ ->
+                {[line1, List.to_string(line2_chars), line3], previous_char}
+            end
+
             # new chunk
-            {[line1, List.to_string(line2_chars), line3], previous_char}
         end
 
       ?> ->
@@ -218,7 +244,13 @@ defmodule Day6 do
             line3_chars = chars_to_the_left ++ [?v] ++ chars_to_the_right
 
             # new chunk
-            {[line1, List.to_string(line2_chars), List.to_string(line3_chars)], previous_char}
+            case previous_char do
+              x when x in [?|, ?+] ->
+                :cycle_detected
+
+              _ ->
+                {[line1, List.to_string(line2_chars), List.to_string(line3_chars)], previous_char}
+            end
 
           # move off the map, place x
           nil ->
@@ -252,8 +284,14 @@ defmodule Day6 do
 
             line2_chars = chars_to_the_left ++ [filler, ?>] ++ chars_to_the_right
 
-            # new chunk
-            {[line1, List.to_string(line2_chars), line3], previous_char}
+            case previous_char do
+              x when x in [?-, ?+] ->
+                :cycle_detected
+
+              _ ->
+                # new chunk
+                {[line1, List.to_string(line2_chars), line3], previous_char}
+            end
         end
 
       ?^ ->
@@ -269,7 +307,13 @@ defmodule Day6 do
 
             line2_chars = chars_to_the_left ++ [filler, ?>] ++ chars_to_the_right
 
-            {[line1, List.to_string(line2_chars), line3], previous_char}
+            case previous_char do
+              x when x in [?-, ?+] ->
+                :cycle_detected
+
+              _ ->
+                {[line1, List.to_string(line2_chars), line3], previous_char}
+            end
 
           # move up, place x
           _ ->
@@ -291,7 +335,13 @@ defmodule Day6 do
 
             line1_chars = chars_to_the_left ++ [?^] ++ chars_to_the_right
 
-            {[List.to_string(line1_chars), List.to_string(line2_chars), line3], previous_char}
+            case previous_char do
+              x when x in [?|, ?+] ->
+                :cycle_detected
+
+              _ ->
+                {[List.to_string(line1_chars), List.to_string(line2_chars), line3], previous_char}
+            end
         end
 
       ?v ->
@@ -307,7 +357,13 @@ defmodule Day6 do
 
             line2_chars = chars_to_the_left ++ [?<, filler] ++ chars_to_the_right
 
-            {[line1, List.to_string(line2_chars), line3], previous_char}
+            case previous_char do
+              x when x in [?-, ?+] ->
+                :cycle_detected
+
+              _ ->
+                {[line1, List.to_string(line2_chars), line3], previous_char}
+            end
 
           # move down, place x
           _ ->
@@ -329,7 +385,13 @@ defmodule Day6 do
 
             line3_chars = chars_to_the_left ++ [?v] ++ chars_to_the_right
 
-            {[line1, List.to_string(line2_chars), List.to_string(line3_chars)], previous_char}
+            case previous_char do
+              x when x in [?|, ?+] ->
+                :cycle_detected
+
+              _ ->
+                {[line1, List.to_string(line2_chars), List.to_string(line3_chars)], previous_char}
+            end
         end
     end
   end
@@ -347,6 +409,5 @@ map =
 
 IO.puts("\nvvvvvvvvv\n")
 IO.puts(map |> Enum.reduce(fn line, c -> c <> "\n" <> line end))
-
 
 # todo along each tile, place an x, check if it creates a cycle
