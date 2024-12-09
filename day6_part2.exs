@@ -791,15 +791,15 @@ defmodule Day6 do
 
   def check_for_cycle(lines, {x, y, direction} = position, %{} = history) do
     # store direction of index in history
-    #IO.inspect("-")
-    #IO.inspect({x, y, direction, history})
+    # IO.inspect("-")
+    # IO.inspect({x, y, direction, history})
 
     previous_directions = Map.get(history, {x, y}, [])
     already_went_this_direction? = Enum.member?(previous_directions, direction)
 
     case already_went_this_direction? do
       true ->
-       # IO.puts("> cycle detected!")
+        # IO.puts("> cycle detected!")
         :cycle_detected
 
       false ->
@@ -814,7 +814,7 @@ defmodule Day6 do
             :solved
 
           {x, y, direction} ->
-           # :timer.sleep(1000)
+            # :timer.sleep(1000)
             check_for_cycle(lines, {x, y, direction}, history)
         end
     end
@@ -850,6 +850,7 @@ defmodule Day6 do
     max_x = line_length - 1
     amount_lines = length(lines)
     max_y = amount_lines - 1
+
     case position do
       {0, _, :left} ->
         :solved
@@ -925,8 +926,8 @@ defmodule Day6 do
 
           {3, _} ->
             [
-              [_one,   two,  _three],
-              [four,  _five,    six],
+              [_one, two, _three],
+              [four, _five, six],
               [_seven, eight, _nine]
             ] = chunk
 
@@ -1006,44 +1007,42 @@ IO.inspect(map_variations_with_new_obstacle |> Enum.count())
 results =
   map_variations_with_new_obstacle
   |> Enum.map(fn variant ->
-   Task.async(fn ->
-    # todo find player position
-#    IO.puts("\n----\n")
-#    IO.puts(variant |> Enum.reduce(fn line, c -> c <> "\n" <> line end))
+    Task.async(fn ->
+      # todo find player position
+      #    IO.puts("\n----\n")
+      #    IO.puts(variant |> Enum.reduce(fn line, c -> c <> "\n" <> line end))
 
-    start_pos =
-      variant
-      |> Enum.reduce({:not_found, -1, -1}, fn line, result ->
-        case result do
-          {:found, _, _} ->
-            result
+      start_pos =
+        variant
+        |> Enum.reduce({:not_found, -1, -1}, fn line, result ->
+          case result do
+            {:found, _, _} ->
+              result
 
-          _ ->
-            {_, x, y} = result
+            _ ->
+              {_, x, y} = result
 
-            case String.contains?(line, "^") do
-              true ->
-                # get x pos
-                [left, _] = String.split(line, "^", parts: 2)
-                {:found, String.length(left), y + 1}
+              case String.contains?(line, "^") do
+                true ->
+                  # get x pos
+                  [left, _] = String.split(line, "^", parts: 2)
+                  {:found, String.length(left), y + 1}
 
-              false ->
-                {:not_found, x, y + 1}
-            end
-        end
-      end)
+                false ->
+                  {:not_found, x, y + 1}
+              end
+          end
+        end)
 
-    case start_pos do
-      {:found, x, y} -> Day6.check_for_cycle(variant, {x, y, :up}, %{})
-      _ -> :not_found
-    end
-
-      end)
+      case start_pos do
+        {:found, x, y} -> Day6.check_for_cycle(variant, {x, y, :up}, %{})
+        _ -> :not_found
+      end
+    end)
 
     #  Day6.predict_next_position(variant)
   end)
-
-|> Enum.map(fn task -> Task.await(task, :infinity) end)
+  |> Enum.map(fn task -> Task.await(task, :infinity) end)
 
 count_of_loops =
   results
