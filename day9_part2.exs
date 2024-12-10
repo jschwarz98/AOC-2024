@@ -57,12 +57,14 @@ defmodule Day9 do
     i2 = Enum.reverse(blocks) |> Enum.find_index(fn item -> item === id end)
     chunk_size = block_length - i1 - i2
 
-
-    {has_space?, index} = blocks
+    {has_space?, index} =
+      blocks
       |> Enum.chunk_every(chunk_size, 1, :discard)
       |> Enum.reduce({:no_free_space, 0}, fn chunk, {status, index} = acc ->
         case status do
-          :found_space -> acc
+          :found_space ->
+            acc
+
           :no_free_space ->
             case Enum.all?(chunk, fn item -> item === "." end) do
               true -> {:found_space, index}
@@ -71,22 +73,28 @@ defmodule Day9 do
         end
       end)
 
-      blocks = case {has_space?, index < i1} do
+    blocks =
+      case {has_space?, index < i1} do
         {:no_free_space, _} ->
           blocks
-          {:found_space, false} -> blocks
 
-        {:found_space, true} -> # todo
-          {left_of_free_space, right_side } = Enum.split(blocks, index)
+        {:found_space, false} ->
+          blocks
+
+        # todo
+        {:found_space, true} ->
+          {left_of_free_space, right_side} = Enum.split(blocks, index)
           {removed_elements, remaining_after_free_space} = Enum.split(right_side, chunk_size)
 
-          {middle_part, file_section_and_after} = Enum.split(remaining_after_free_space, i1 - index - chunk_size)
+          {middle_part, file_section_and_after} =
+            Enum.split(remaining_after_free_space, i1 - index - chunk_size)
+
           {file_section, rest_of_blocks} = Enum.split(file_section_and_after, chunk_size)
 
           left_of_free_space ++ file_section ++ middle_part ++ removed_elements ++ rest_of_blocks
       end
 
-      defrag(blocks, id - 1, block_length)
+    defrag(blocks, id - 1, block_length)
   end
 end
 
