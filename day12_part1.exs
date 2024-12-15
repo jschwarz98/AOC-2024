@@ -53,31 +53,31 @@ defmodule Day12 do
     region_keys = Map.keys(region_map)
 
     region_keys
-      |> Enum.reduce(0, fn index, total_cost ->
-        {char, coordinates} = Map.get(region_map, index, {?., []})
+    |> Enum.reduce(0, fn index, total_cost ->
+      {char, coordinates} = Map.get(region_map, index, {?., []})
 
-        fencing_cost =
-          coordinates
-          |> Enum.reduce(0, fn {x, y}, fencing_cost ->
-            above = tile_map[{x, y - 1}]
-            below = tile_map[{x, y + 1}]
-            left = tile_map[{x - 1, y}]
-            right = tile_map[{x + 1, y}]
+      fencing_cost =
+        coordinates
+        |> Enum.reduce(0, fn {x, y}, fencing_cost ->
+          above = tile_map[{x, y - 1}]
+          below = tile_map[{x, y + 1}]
+          left = tile_map[{x - 1, y}]
+          right = tile_map[{x + 1, y}]
 
-            around = [above, left, right, below]
+          around = [above, left, right, below]
 
-            same_chars =
-              around
-              |> Enum.filter(fn c -> c == char end)
-              |> Enum.count()
+          same_chars =
+            around
+            |> Enum.filter(fn c -> c == char end)
+            |> Enum.count()
 
-            fencing_cost + 4 - same_chars
-          end)
+          fencing_cost + 4 - same_chars
+        end)
 
-        region_cost = fencing_cost * length(coordinates)
+      region_cost = fencing_cost * length(coordinates)
 
-        total_cost + region_cost
-      end)
+      total_cost + region_cost
+    end)
   end
 
   defp search_region(%{} = tile_map, position) do
