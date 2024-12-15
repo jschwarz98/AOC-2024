@@ -31,10 +31,10 @@ defmodule Day10 do
         0
 
       _ ->
-        count + (next_moves
-        |> Enum.map(fn coordinate -> dfs(map, max_x, max_y, coordinate, cur + 1, 0) end)
-        |> Enum.reduce(0, &Kernel.+/2))
-
+        count +
+          (next_moves
+           |> Enum.map(fn coordinate -> dfs(map, max_x, max_y, coordinate, cur + 1, 0) end)
+           |> Enum.reduce(0, &Kernel.+/2))
     end
   end
 

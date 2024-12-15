@@ -3,10 +3,12 @@ defmodule Day11 do
 
   def count_stones_after_blinks(stones, total_blinks) do
     cache = %{}
-    {result, _updated_cache}  = Enum.reduce(stones, {0, cache}, fn stone, {count, cache} ->
-      {n, new_cache} =  count_stones(stone, total_blinks, cache)
-      {count + n, new_cache}
-    end)
+
+    {result, _updated_cache} =
+      Enum.reduce(stones, {0, cache}, fn stone, {count, cache} ->
+        {n, new_cache} = count_stones(stone, total_blinks, cache)
+        {count + n, new_cache}
+      end)
 
     result
   end
@@ -19,13 +21,16 @@ defmodule Day11 do
     case Map.get(cache, key) do
       nil ->
         new_stones = transform_stone(stone)
-        {count, updated_cache} = Enum.reduce(new_stones, {0, cache}, fn new_stone, {count, current_cache} ->
-          {n, new_cache } = count_stones(new_stone, blinks_left - 1, current_cache)
 
-          {count + n, new_cache}
-        end)
+        {count, updated_cache} =
+          Enum.reduce(new_stones, {0, cache}, fn new_stone, {count, current_cache} ->
+            {n, new_cache} = count_stones(new_stone, blinks_left - 1, current_cache)
+
+            {count + n, new_cache}
+          end)
 
         {count, Map.put(updated_cache, key, count)}
+
       count ->
         {count, cache}
     end

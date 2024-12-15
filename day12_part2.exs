@@ -85,11 +85,14 @@ defmodule Day12 do
                       move_and_check(coordinates, coordinate, neighbour_check_fn, move_fn)
 
                     side_set = Map.get(visited_coordinates, side, MapSet.new())
-                    visited_any_already? = Enum.any?(visited_nodes, fn node -> MapSet.member?(side_set, node)  end)
-                    checked_coordinates_set = MapSet.union(side_set,MapSet.new(visited_nodes))
+
+                    visited_any_already? =
+                      Enum.any?(visited_nodes, fn node -> MapSet.member?(side_set, node) end)
+
+                    checked_coordinates_set = MapSet.union(side_set, MapSet.new(visited_nodes))
+
                     visited_coordinates =
                       Map.put(visited_coordinates, side, checked_coordinates_set)
-
 
                     case visited_any_already? do
                       true ->
@@ -97,9 +100,7 @@ defmodule Day12 do
 
                       false ->
                         {count + 1, visited_coordinates}
-
                     end
-
                 end
               end
             )
