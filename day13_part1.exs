@@ -34,7 +34,6 @@ defmodule Day13 do
     |> Enum.map(&MapSet.to_list/1)
     |> Enum.filter(fn solutions -> not Enum.empty?(solutions) end)
     |> Enum.map(fn solutions ->
-
       if Enum.empty?(solutions) do
         :no_result
       else
@@ -42,11 +41,9 @@ defmodule Day13 do
         |> Enum.map(fn {a_presses, b_presses} -> a_presses * 3 + b_presses * 1 end)
         |> Enum.min()
       end
-
     end)
     |> Enum.filter(fn min -> min != :no_result end)
     |> Enum.reduce(&Kernel.+/2)
-
   end
 
   defp read_games_from_file(filepath) do
@@ -68,7 +65,6 @@ defmodule Day13 do
          solutions \\ MapSet.new(),
          already_checked \\ %{}
        ) do
-
     case {current_x, current_y} do
       {current_x, current_y} when current_x > target_x or current_y > target_y ->
         {solutions, already_checked}
@@ -99,10 +95,11 @@ defmodule Day13 do
                 current_x + b_x_offset,
                 current_y + b_y_offset,
                 solutions,
-              already_checked
+                already_checked
               )
 
-            already_checked  = Map.put(already_checked, {a_button_presses, b_button_presses}, solutions)
+            already_checked =
+              Map.put(already_checked, {a_button_presses, b_button_presses}, solutions)
 
             {solutions, already_checked}
 
