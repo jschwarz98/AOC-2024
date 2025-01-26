@@ -150,13 +150,102 @@ defmodule Day16 do
 
     {distances, previous} = dijkstra(nodes, nodes, edges, distance_from_start, previous_nodes)
 
-    distances[:end]
+    visited_nodes = backtrace(previous)
+
+    target = distances[:end]
+
+    all_edges = edges |> Map.keys()
+
+    used_edges =
+      visited_nodes
+      |> Enum.chunk_every(2, 1, :discard)
+      |> Enum.reduce([], fn [node1, node2], used ->
+        used_edge =
+          all_edges
+          |> Enum.filter(fn {e1, e2} ->
+            (e1 == node1 and e2 == node2) or (e1 == node2 and e2 == node1)
+          end)
+          |> List.first()
+
+        [used_edge | used]
+      end)
+
+    other_possible_solutions =
+      used_edges
+      |> Enum.reduce([], fn used_edge, other_solutions ->
+        new_edges = Map.drop(edges, [used_edge])
+
+        distance_from_start =
+          nodes
+          |> Map.keys()
+          |> Enum.reduce(%{}, fn node, distances ->
+            case node do
+              :start -> Map.put(distances, node, 0)
+              _ -> Map.put(distances, node, 2_000_000_000)
+            end
+          end)
+
+        {distance, previous} = dijkstra(nodes, nodes, new_edges, distance_from_start, %{})
+        IO.puts("back out here")
+        result = distance[:end]
+          IO.inspect(result)
+        visited = backtrace(previous)
+        IO.inspect({"without", used_edge, "=", result, " <= ", visited})
+
+        case result do
+          ^target -> [visited | other_solutions]
+          _ -> other_solutions
+        end
+      end)
+      |> Enum.reduce(MapSet.new(used_edges), fn solution, edges_set ->
+        solution
+        |> Enum.chunk_every(2, 1, :discard)
+        |> Enum.reduce(edges_set, fn [node1, node2], set ->
+          case MapSet.member?(set, {node1, node2}) or MapSet.member?(set, {node2, node1}) do
+            true -> set
+            false -> MapSet.put(set, {node1, node2})
+          end
+        end)
+      end)
+      |> MapSet.to_list()
+      |> Enum.reduce(MapSet.new(), fn {node1, node2}, visited_coordinates ->
+        {x, y} = nodes[node1]
+
+        coordinates =
+          case nodes[node2] do
+            {^x, y2} ->
+              range =
+                case y2 > y do
+                  true -> y..y2
+                  false -> y2..y
+                end
+
+              range
+              |> Enum.map(fn yy -> {x, yy} end)
+
+            {x2, ^y} ->
+              range =
+                case x2 > x do
+                  true -> x..x2
+                  false -> x2..x
+                end
+
+              range
+              |> Enum.map(fn xx -> {xx, y} end)
+          end
+
+        MapSet.union(MapSet.new(coordinates), visited_coordinates)
+      end)
+      |> MapSet.to_list()
+      |> Enum.count()
   end
 
   defp backtrace(previous, acc \\ [], current \\ :end) do
+    IO.inspect({"backtracing", current, acc})
     case current do
       :start ->
         [current | acc]
+      nil -> acc
 
       _ ->
         prev = previous[current]
@@ -169,16 +258,21 @@ defmodule Day16 do
 
     case remaining_nodes do
       [] ->
+        IO.puts("done :)")
         {distance_from_start, previous_nodes}
 
       remaining_nodes ->
+        IO.inspect({"remaining nodes...", remaining_nodes})
         min_distance_node =
           remaining_nodes
           |> Enum.map(fn node -> {node, distance_from_start[node]} end)
           |> Enum.min_by(fn {node, distance} -> distance end)
           |> elem(0)
 
+        IO.inspect({"min distance node", min_distance_node})
+
         updated_nodes = Map.drop(nodes, [min_distance_node])
+        IO.inspect({"updated_nodes", updated_nodes})
 
         {updated_distances, updated_previous} =
           edges
@@ -260,6 +354,8 @@ defmodule Day16 do
                   {distances, previous}
               end
           end)
+
+        IO.inspect({"updated distances and previous", updated_distances, updated_previous})
 
         dijkstra(all_nodes, updated_nodes, edges, updated_distances, updated_previous)
     end
