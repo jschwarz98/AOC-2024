@@ -64,9 +64,9 @@ defmodule Day21 do
     robot2_inputs = solve(dir2, robot1_inputs |> String.to_charlist())
     IO.inspect({"step3", robot2_inputs})
 
-    my_inputs = solve(dir2, robot2_inputs |> String.to_charlist())
-    IO.inspect({"step4", my_inputs})
-    my_inputs
+    # my_inputs = solve(dir2, robot2_inputs |> String.to_charlist())
+    # IO.inspect({"step4", my_inputs})
+    # my_inputs
     robot2_inputs
   end
 
@@ -74,7 +74,7 @@ defmodule Day21 do
 
   defp solve(pad, [input | inputs], commands) do
     target_position = pad[input]
-    presses = resolve(pad, target_position) <> "A"
+    presses = resolve(pad, target_position)
     solve(Map.put(pad, :position, target_position), inputs, commands <> presses)
   end
 
@@ -86,75 +86,49 @@ defmodule Day21 do
     # we check if its faster to press x or y axis first from our current position
   end
 
-  defp resolve(%{} = pad, {tx, ty} = target, inputs \\ "", prev \\ nil) do
-    {ax, ay} = avoid = pad[:avoid]
-    {x, y} = position = pad[:position]
+  defp resolve(%{} = pad, {tx, ty}) do
+    {_ax, ay} = pad[:avoid]
+    {x, y} = pad[:position]
 
-    case position do
-      ^avoid ->
-        :error
+    y_diff = ty - y
+    x_diff = tx - x
 
-      ^target ->
-        inputs
+    y_movement =
+      case y_diff do
+        0 ->
+          ""
+
+        y_diff when y_diff < 0 ->
+          # move up
+          String.duplicate("^", abs(y_diff))
+
+        y_diff when y_diff > 0 ->
+          # move down
+          String.duplicate("v", y_diff)
+      end
+
+    x_movement =
+      case x_diff do
+        0 ->
+          ""
+
+        x_diff when x_diff < 0 ->
+          # move left
+          String.duplicate("<", abs(x_diff))
+
+        x_diff when x_diff > 0 ->
+          # move right
+          String.duplicate(">", x_diff)
+      end
+
+    case y do
+      ^ay ->
+        # y axis first, then x-axis
+        y_movement <> x_movement <> "A"
 
       _ ->
-        y_diff = ty - y
-        x_diff = tx - x
-
-        {x_char, vx} =
-          case x_diff do
-            x_diff when x_diff < 0 -> {"<", -1}
-            x_diff when x_diff > 0 -> {">", +1}
-            _ -> {:ignore, 0}
-          end
-
-        {y_char, vy} =
-          case y_diff do
-            y_diff when y_diff < 0 -> {"^", -1}
-            y_diff when y_diff > 0 -> {"v", 1}
-            _ -> {:ignore, 0}
-          end
-
-        y_first_path =
-          case y_char do
-            :ignore -> :error
-            _ -> resolve(Map.put(pad, :position, {x, y + vy}), target, inputs <> y_char, y_char)
-          end
-
-        x_first_path =
-          case x_char do
-            :ignore -> :error
-            _ -> resolve(Map.put(pad, :position, {x + vx, y}), target, inputs <> x_char, x_char)
-          end
-
-        case {x_first_path, y_first_path} do
-          {:error, :error} ->
-            :error
-
-          {:error, y_first} ->
-            y_first
-
-          {x_first, :error} ->
-            x_first
-
-          {x_first, y_first} ->
-            x_length = String.length(x_first)
-            y_length = String.length(y_first)
-
-            case x_length - y_length do
-              l when l == 0 ->
-                case x_char == prev do
-                  true -> x_first
-                  false -> y_first
-                end
-
-              l when l < 0 ->
-                x_first
-
-              l when l > 0 ->
-                y_first
-            end
-        end
+        # x-axis first, then y axis
+        x_movement <> y_movement <> "A"
     end
   end
 
@@ -167,7 +141,7 @@ defmodule Day21 do
 end
 
 total_complexity =
-  File.stream!("zzz.data")
+  File.stream!("zzzz.data")
   |> Enum.map(&String.trim/1)
   |> Enum.map(fn code ->
     state = Day21.initial_state()
