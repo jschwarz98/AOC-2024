@@ -10,10 +10,7 @@ defmodule Day21 do
     |> Enum.map(&String.trim/1)
     |> Enum.map(fn code ->
       result = encode_key_presses(code, key_pads)
-      IO.puts(code <> " ~> " <> result)
-
       complexity = calc_complexity(code, result)
-      IO.inspect({"resulting complexity", code, complexity})
       complexity
     end)
     |> Enum.reduce(0, &Kernel.+/2)
@@ -106,4 +103,4 @@ defmodule Day21 do
   end
 end
 
-total_complexity = Day21.solve("day21.data", 2)
+Day21.solve("day21.data", 2)
