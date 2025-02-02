@@ -1,13 +1,24 @@
 defmodule Day21 do
-  def initial_state() do
-    %{
-      # robot 1
-      num_pad: num_pad(),
-      # robot 2
-      dir_pad1: dir_pad(),
-      # me
-      dir_pad2: dir_pad()
-    }
+  def solve(path, depth) do
+    dir_pads =
+      1..depth
+      |> Enum.map(fn _ -> dir_pad() end)
+
+    key_pads = [num_pad()] ++ dir_pads
+
+    complexity = File.stream!(path)
+    |> Enum.map(&String.trim/1)
+    |> Enum.map(fn code ->
+      result = encode_key_presses(code, key_pads)
+      IO.puts(code <> " ~> " <> result)
+
+      complexity = calc_complexity(code, result)
+      IO.inspect({"resulting complexity", code, complexity})
+      complexity
+    end)
+    |> Enum.reduce(0, &Kernel.+/2)
+
+    IO.inspect({"total complexity: ", complexity})
   end
 
   defp dir_pad do
@@ -40,96 +51,51 @@ defmodule Day21 do
     }
   end
 
-  def input(
-        %{
-          num_pad: num,
-          dir_pad1: dir1,
-          dir_pad2: dir2
-        },
-        code
-      ) do
-    # try to go through each pad, basically iterating, and get the needed inputs per pad, for the previous input
-    # so, we check what moves we need to make for num_pad, then use that to check what dir_pad1 needs to press,
-    # feed that into pad2, and then thats our result
+  def encode_key_presses(code, []), do: code
 
-    # pressed for robot 1 to make:
-    num_pad_inputs = solve(num, code |> String.to_charlist())
-    IO.inspect({"step1", num_pad_inputs})
-
-    # presses for robot 2 to press to robot 1 can make the correct moves:
-    robot1_inputs = solve(dir1, num_pad_inputs |> String.to_charlist())
-    IO.inspect({"step2", robot1_inputs})
-
-    # presses for me so robot 2 can make the correct moves:
-    robot2_inputs = solve(dir2, robot1_inputs |> String.to_charlist())
-    IO.inspect({"step3", robot2_inputs})
-
-    # my_inputs = solve(dir2, robot2_inputs |> String.to_charlist())
-    # IO.inspect({"step4", my_inputs})
-    # my_inputs
-    robot2_inputs
+  def encode_key_presses(code, key_pads) do
+    code
+    |> String.to_charlist()
+    |> Enum.reduce({"", ?A}, fn key, {result, previous} ->
+      new_result = result <> encode_key_press(key, key_pads, previous)
+      {new_result, key}
+    end)
+    |> elem(0)
   end
 
-  defp solve(%{} = pad, inputs) when is_list(inputs), do: solve(pad, inputs, "")
-
-  defp solve(pad, [input | inputs], commands) do
-    target_position = pad[input]
-    presses = resolve(pad, target_position)
-    solve(Map.put(pad, :position, target_position), inputs, commands <> presses)
-  end
-
-  defp solve(_map, [], commands), do: commands
-
-  defp find_shortest_inputs_for_chunk(pad, chunk) do
-    freqs = Enum.frequencies(chunk)
-
-    # we check if its faster to press x or y axis first from our current position
-  end
-
-  defp resolve(%{} = pad, {tx, ty}) do
-    {_ax, ay} = pad[:avoid]
-    {x, y} = pad[:position]
-
+  defp encode_key_press(key, [key_pad | key_pads], prev) do
+    avoid = key_pad[:avoid]
+    {x, y} = key_pad[prev]
+    {tx, ty} = key_pad[key]
     y_diff = ty - y
     x_diff = tx - x
 
-    y_movement =
+    y_char =
       case y_diff do
-        0 ->
-          ""
-
-        y_diff when y_diff < 0 ->
-          # move up
-          String.duplicate("^", abs(y_diff))
-
-        y_diff when y_diff > 0 ->
-          # move down
-          String.duplicate("v", y_diff)
+        y_diff when y_diff < 0 -> "^"
+        _ -> "v"
       end
 
-    x_movement =
+    y_movement = String.duplicate(y_char, abs(y_diff))
+
+    x_char =
       case x_diff do
-        0 ->
-          ""
-
-        x_diff when x_diff < 0 ->
-          # move left
-          String.duplicate("<", abs(x_diff))
-
-        x_diff when x_diff > 0 ->
-          # move right
-          String.duplicate(">", x_diff)
+        x_diff when x_diff < 0 -> "<"
+        _ -> ">"
       end
 
-    case y do
-      ^ay ->
-        # y axis first, then x-axis
-        y_movement <> x_movement <> "A"
+    x_movement = String.duplicate(x_char, abs(x_diff))
 
-      _ ->
-        # x-axis first, then y axis
-        x_movement <> y_movement <> "A"
-    end
+    # check both ways to move (if legal) and pick the shorter result
+    results =
+      [
+        {{x, ty}, y_movement <> x_movement <> "A"},
+        {{tx, y}, x_movement <> y_movement <> "A"}
+      ]
+      |> Enum.filter(fn {check_for_avoid, _} -> check_for_avoid != avoid end)
+      |> Enum.map(fn {_, new_code} -> encode_key_presses(new_code, key_pads) end)
+      |> Enum.sort_by(&String.length/1)
+      |> List.first()
   end
 
   def calc_complexity(code, result) do
@@ -140,22 +106,4 @@ defmodule Day21 do
   end
 end
 
-total_complexity =
-  File.stream!("zzzz.data")
-  |> Enum.map(&String.trim/1)
-  |> Enum.map(fn code ->
-    state = Day21.initial_state()
-    result = Day21.input(state, code)
-    complexity = Day21.calc_complexity(code, result)
-    IO.inspect({"resulting complexity", code, complexity})
-    complexity
-  end)
-  |> Enum.reduce(0, &Kernel.+/2)
-
-IO.inspect({"total complexity: ", total_complexity})
-
-# v<<A>>^A<A>AvA<^AA>A<vAAA>^A
-# v<<A>>^A<A>A<AAv>A^Av<AAA^>A
-
-#<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A
-#v<A<AA>>^AvAA^<A>Av<<A>>^AvA^Av<<A>>^AAv<A>A^A<A>Av<A<A>>^AAA<Av>A^A
+total_complexity = Day21.solve("day21.data", 2)
